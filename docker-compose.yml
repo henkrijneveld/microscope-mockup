@@ -1,0 +1,60 @@
+version: '2'
+
+# NOTES:
+# for use of arg, env etc: https://vsupalov.com/docker-arg-env-variable-guide/
+# a empty data directory must exist with user / group equal to hostuser (1000:1000)
+# the site must be placed into www/html
+
+services:
+  web:
+    hostname: microscope.dev
+    build:
+      context: docker/web/.
+      args:
+        adminid: henk
+        adminpw: helhond
+        userid: user
+        userpw: eenuser
+        loglevel: trace8 # debug, trace8, crit
+        uiduser: 1000
+        giduser: 1000
+    ports:
+    - "80:80"
+    - "443:443"
+    volumes:
+    - .:/var/www/html
+    environment:
+      XDEBUG_CONFIG: "remote_host=192.168.43.107"
+
+  db:
+    hostname: microscopedb.dev
+    user: 1000:1000
+    build:
+      context: docker/db/.
+    volumes:
+    - ./data:/var/lib/mysql
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD="no"
+      - MYSQL_ROOT_PASSWORD=root
+
+  mail:
+    hostname: microscopemail.dev
+    build:
+      context: docker/mail/.
+      args:
+        smtpport: 25
+        httpport: 80
+    ports:
+      - "1080:80"
+
+  phpmyadmin:
+    hostname: microscopemyadmin.dev
+    image: phpmyadmin/phpmyadmin:4.6
+    container_name: phpmyadmin
+    environment:
+    - PMA_ARBITRARY=1
+    restart: always
+    ports:
+    - 8080:80
+    volumes:
+    - /sessions
